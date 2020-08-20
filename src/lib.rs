@@ -1,23 +1,28 @@
 use std::ops::{Deref, DerefMut};
 
 pub mod macros;
+
 pub use rand::prelude::*;
 use rand_distr::*;
 pub use rand_pcg::Pcg64Mcg;
+
 pub struct Rand<R: Rng> {
     rng: R,
 }
+
 impl<R: Rng> Deref for Rand<R> {
     type Target = R;
     fn deref(&self) -> &Self::Target {
         &self.rng
     }
 }
+
 impl<R: Rng> DerefMut for Rand<R> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.rng
     }
 }
+
 impl<R: Rng> Rand<R> {
     pub fn new(rng: R) -> Self {
         Rand { rng }
@@ -48,5 +53,9 @@ impl<R: Rng> Rand<R> {
     pub fn rand_gamma(&mut self, shape: f64, scale: f64) -> f64 {
         let distr = Gamma::new(shape, scale).unwrap();
         self.sample(distr)
+    }
+
+    pub fn choice<I: Iterator>(&mut self, iterable: I) -> <I as std::iter::Iterator>::Item {
+        iterable.choose(&mut self.rng).unwrap()
     }
 }
