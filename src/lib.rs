@@ -55,7 +55,11 @@ impl<R: Rng> Rand<R> {
         self.sample(distr)
     }
 
-    pub fn choice<I: Iterator>(&mut self, iterable: I) -> <I as std::iter::Iterator>::Item {
+    pub fn choice<T, I: Iterator<Item = T>>(&mut self, iterable: I) -> T {
         iterable.choose(&mut self.rng).unwrap()
+    }
+
+    pub fn n_of<T, I: Iterator<Item = T>>(&mut self, iterable: I, amount: usize) -> Vec<T> {
+        iterable.choose_multiple(&mut self.rng, amount)
     }
 }
