@@ -62,4 +62,19 @@ impl<R: Rng> Rand<R> {
     pub fn n_of<T, I: Iterator<Item = T>>(&mut self, iterable: I, amount: usize) -> Vec<T> {
         iterable.choose_multiple(&mut self.rng, amount)
     }
+
+    pub fn n_of_weighted<X, T, I, W>(&mut self, iterable: &mut I, weights: W) -> T
+    where
+        I: Iterator<Item = T>,
+        W: IntoIterator,
+        W::Item: rand::distributions::uniform::SampleBorrow<X>,
+        X: rand::distributions::uniform::SampleUniform
+            + PartialOrd
+            + for<'a> ::core::ops::AddAssign<&'a X>
+            + Clone
+            + Default,
+    {
+        let w = rand::distributions::WeightedIndex::new(weights).unwrap();
+        iterable.nth(self.rng.sample(w)).unwrap()
+    }
 }
