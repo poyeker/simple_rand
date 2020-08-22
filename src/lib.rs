@@ -1,7 +1,7 @@
 use std::ops::{Deref, DerefMut};
 
 pub mod macros;
-
+use itertools::*;
 pub use rand::prelude::*;
 use rand_distr::*;
 pub use rand_pcg::Pcg64Mcg;
@@ -55,11 +55,11 @@ impl<R: Rng> Rand<R> {
         self.sample(distr)
     }
 
-    pub fn choice<T, I: Iterator<Item = T>>(&mut self, iterable: I) -> T {
+    pub fn choice<T, I>(&mut self, iterable: I) -> T where I: Iterator<Item = T> {
         iterable.choose(&mut self.rng).unwrap()
     }
 
-    pub fn n_of<T, I: Iterator<Item = T>>(&mut self, iterable: I, amount: usize) -> Vec<T> {
+    pub fn n_of<T, I>(&mut self, iterable: I, amount: usize) -> Vec<T> where I: Iterator<Item = T> {
         iterable.choose_multiple(&mut self.rng, amount)
     }
 
@@ -76,5 +76,18 @@ impl<R: Rng> Rand<R> {
     {
         let w = rand::distributions::WeightedIndex::new(weights).unwrap();
         iterable.nth(self.rng.sample(w)).unwrap()
+    }
+
+    pub fn up_to_n_of<T, I>(
+        &mut self,
+        iterable:  &mut I,
+        amount: usize,
+    ) -> Vec<T> where T: Clone, I: Iterator<Item = T> {
+        let (iter1, iter2) = iterable.tee();
+        if amount < iter1.count() {
+            self.n_of(iter2, amount)
+        } else {
+            iter2.collect()
+        }
     }
 }
