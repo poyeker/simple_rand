@@ -55,17 +55,23 @@ impl<R: Rng> Rand<R> {
         self.sample(distr)
     }
 
-    pub fn choice<T, I>(&mut self, iterable: I) -> T where I: Iterator<Item = T> {
+    pub fn choice<T, I>(&mut self, iterable: I) -> T
+    where
+        I: Iterator<Item = T>,
+    {
         iterable.choose(&mut self.rng).unwrap()
     }
 
-    pub fn n_of<T, I>(&mut self, iterable: I, amount: usize) -> Vec<T> where I: Iterator<Item = T> {
+    pub fn n_of<T, I>(&mut self, iterable: I, amount: usize) -> Vec<T>
+    where
+        I: Iterator<Item = T>,
+    {
         iterable.choose_multiple(&mut self.rng, amount)
     }
 
-    pub fn n_of_weighted<X, T, I, W>(&mut self, iterable: &mut I, weights: W) -> T
+    pub fn one_of_weighted<X, T, I, W>(&mut self, iterable: I, weights: W) -> T
     where
-        I: Iterator<Item = T>,
+        I: Iterator<Item = T> + Clone,
         W: IntoIterator,
         W::Item: rand::distributions::uniform::SampleBorrow<X>,
         X: rand::distributions::uniform::SampleUniform
@@ -75,19 +81,14 @@ impl<R: Rng> Rand<R> {
             + Default,
     {
         let w = rand::distributions::WeightedIndex::new(weights).unwrap();
-        iterable.nth(self.rng.sample(w)).unwrap()
+        iterable.clone().nth(self.rng.sample(w)).unwrap()
     }
-
-    pub fn up_to_n_of<T, I>(
-        &mut self,
-        iterable:  &mut I,
-        amount: usize,
-    ) -> Vec<T> where T: Clone, I: Iterator<Item = T> {
-        let (iter1, iter2) = iterable.tee();
-        if amount < iter1.count() {
-            self.n_of(iter2, amount)
-        } else {
-            iter2.collect()
-        }
+    pub fn shuffle<T, I>(&mut self, iterable: I) -> Vec<T>
+    where
+        T: Clone,
+        I: Iterator<Item = T> + Clone,
+    {
+        let n = iterable.clone().count();
+        self.choice(iterable.permutations(n))
     }
 }
