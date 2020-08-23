@@ -85,6 +85,38 @@ impl<R: Rng> Rand<R> {
         iterable.clone().nth(self.rng.sample(w)).unwrap()
     }
 
+    pub fn one_of_weighted_by_key<T, I, K, F>(&mut self, iterable: I, key: F) -> T
+    where
+        I: Iterator<Item = T> + Clone,
+        K: Ord
+            + Clone
+            + Default
+            + rand_distr::uniform::SampleUniform
+            + for<'a> std::ops::AddAssign<&'a K>,
+        F: FnMut(T) -> K,
+    {
+        let weights = iterable.clone().map(key);
+        let w = rand::distributions::WeightedIndex::new(weights).unwrap();
+        iterable.clone().nth(self.rng.sample(w)).unwrap()
+    }
+
+    pub fn n_of_weighted_by_key<T, I, K, F>(&mut self, iterable: I, amount: usize, key: F) -> Vec<T>
+    where
+        I: Iterator<Item = T> + Clone,
+        K: Ord
+            + Clone
+            + Default
+            + rand_distr::uniform::SampleUniform
+            + for<'a> std::ops::AddAssign<&'a K>,
+        F: FnMut(T) -> K,
+    {
+        let weights = iterable.clone().map(key);
+        let w = rand::distributions::WeightedIndex::new(weights).unwrap();
+        (0..amount)
+            .map(|_| iterable.clone().nth(self.sample(&w)).unwrap())
+            .collect()
+    }
+
     pub fn n_of_weighted<X, T, I, W>(&mut self, iterable: I, weights: W, amount: usize) -> Vec<T>
     where
         I: Iterator<Item = T> + Clone,
