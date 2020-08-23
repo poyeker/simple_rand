@@ -3,6 +3,7 @@ use std::ops::{Deref, DerefMut};
 pub mod macros;
 use itertools::*;
 pub use rand::prelude::*;
+use rand::seq::SliceRandom;
 use rand_distr::*;
 pub use rand_pcg::Pcg64Mcg;
 
@@ -83,12 +84,14 @@ impl<R: Rng> Rand<R> {
         let w = rand::distributions::WeightedIndex::new(weights).unwrap();
         iterable.clone().nth(self.rng.sample(w)).unwrap()
     }
-    pub fn shuffle<T, I>(&mut self, iterable: I) -> Vec<T>
+    pub fn shuffle<T, I>(&mut self, iterable: &mut I) -> Vec<T>
     where
-        T: Clone,
         I: Iterator<Item = T> + Clone,
     {
-        let n = iterable.clone().count();
-        self.choice(iterable.permutations(n))
+        let iter = iterable.clone();
+        let mut idx: Vec<_> = (0..iterable.count()).collect();
+        idx.shuffle(&mut self.rng);
+        let sorted_tuples = idx.iter().zip(iter).sorted_by_key(|x| *x.0);
+        sorted_tuples.map(|x| x.1).collect()
     }
 }
