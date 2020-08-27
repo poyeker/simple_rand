@@ -4,6 +4,7 @@ pub mod macros;
 use itertools::*;
 pub use rand::prelude::*;
 use rand::seq::SliceRandom;
+use rand::seq::IteratorRandom;
 use rand_distr::*;
 pub use rand_pcg::Pcg64Mcg;
 
@@ -70,7 +71,7 @@ impl<R: Rng> Rand<R> {
         iterable.choose_multiple(&mut self.rng, amount)
     }
 
-    pub fn one_of_weighted<X, T, I, W>(&mut self, iterable: I, weights: W) -> T
+    pub fn one_of_weighted<X, T, I, W>(&mut self, mut iterable: I, weights: W) -> T
     where
         I: Iterator<Item = T> + Clone,
         W: IntoIterator,
@@ -82,10 +83,10 @@ impl<R: Rng> Rand<R> {
             + Default,
     {
         let w = rand::distributions::WeightedIndex::new(weights).unwrap();
-        iterable.clone().nth(self.rng.sample(w)).unwrap()
+        iterable.nth(self.rng.sample(w)).unwrap()
     }
 
-    pub fn one_of_weighted_by_key<T, I, K, F>(&mut self, iterable: I, key: F) -> T
+    pub fn one_of_weighted_by_key<T, I, K, F>(&mut self, mut iterable: I, key: F) -> T
     where
         I: Iterator<Item = T> + Clone,
         K: Ord
@@ -97,7 +98,7 @@ impl<R: Rng> Rand<R> {
     {
         let weights = iterable.clone().map(key);
         let w = rand::distributions::WeightedIndex::new(weights).unwrap();
-        iterable.clone().nth(self.rng.sample(w)).unwrap()
+        iterable.nth(self.rng.sample(w)).unwrap()
     }
 
     pub fn n_of_weighted_by_key<T, I, K, F>(&mut self, iterable: I, amount: usize, key: F) -> Vec<T>
