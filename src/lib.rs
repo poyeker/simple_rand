@@ -3,7 +3,6 @@ use std::ops::{Deref, DerefMut};
 pub mod macros;
 use itertools::*;
 pub use rand::prelude::*;
-use rand::seq::SliceRandom;
 use rand::seq::IteratorRandom;
 use rand_distr::*;
 pub use rand_pcg::Pcg64Mcg;
