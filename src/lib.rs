@@ -3,9 +3,12 @@ use std::ops::{Deref, DerefMut};
 pub mod macros;
 use itertools::*;
 pub use rand::prelude::*;
-use rand::seq::IteratorRandom;
+pub use rand::rngs::StdRng;
+use rand::seq::SliceRandom;
 use rand_distr::*;
-pub use rand_pcg::Pcg64Mcg;
+pub use rand_pcg::{Pcg32, Pcg64, Pcg64Mcg};
+pub use rand_xorshift::XorShiftRng;
+pub use rand_xoshiro::*;
 
 pub struct Rand<R: Rng> {
     rng: R,
@@ -56,23 +59,26 @@ impl<R: Rng> Rand<R> {
         self.sample(distr)
     }
 
-    pub fn choice<T, I>(&mut self, iterable: I) -> T
+    pub fn one_of<T>(&mut self, slice: &[T]) -> T
     where
-        I: Iterator<Item = T>,
+        T: Clone,
     {
-        iterable.choose(&mut self.rng).unwrap()
+        slice.choose(&mut self.rng).unwrap().clone()
     }
 
-    pub fn n_of<T, I>(&mut self, iterable: I, amount: usize) -> Vec<T>
+    pub fn n_of<T>(&mut self, slice: &[T], amount: usize) -> Vec<T>
     where
-        I: Iterator<Item = T>,
+        T: Clone,
     {
-        iterable.choose_multiple(&mut self.rng, amount)
+        slice
+            .choose_multiple(&mut self.rng, amount)
+            .cloned()
+            .collect()
     }
 
-    pub fn one_of_weighted<X, T, I, W>(&mut self, mut iterable: I, weights: W) -> T
+    pub fn one_of_weighted<X, T, I, W>(&mut self, slice: &[T], weights: W) -> T
     where
-        I: Iterator<Item = T> + Clone,
+        T: Clone,
         W: IntoIterator,
         W::Item: rand::distributions::uniform::SampleBorrow<X>,
         X: rand::distributions::uniform::SampleUniform
@@ -82,44 +88,44 @@ impl<R: Rng> Rand<R> {
             + Default,
     {
         let w = rand::distributions::WeightedIndex::new(weights).unwrap();
-        iterable.nth(self.rng.sample(w)).unwrap()
+        slice[self.rng.sample(w)].clone()
     }
 
-    pub fn one_of_weighted_by_key<T, I, K, F>(&mut self, mut iterable: I, key: F) -> T
+    pub fn one_of_weighted_by_key<T, K, F>(&mut self, slice: &[T], key: F) -> T
     where
-        I: Iterator<Item = T> + Clone,
+        T: Clone,
         K: Ord
             + Clone
             + Default
             + rand_distr::uniform::SampleUniform
             + for<'a> std::ops::AddAssign<&'a K>,
-        F: FnMut(T) -> K,
+        F: FnMut(&T) -> K,
     {
-        let weights = iterable.clone().map(key);
+        let weights = slice.iter().map(key);
         let w = rand::distributions::WeightedIndex::new(weights).unwrap();
-        iterable.nth(self.rng.sample(w)).unwrap()
+        slice[self.rng.sample(w)].clone()
     }
 
-    pub fn n_of_weighted_by_key<T, I, K, F>(&mut self, iterable: I, amount: usize, key: F) -> Vec<T>
+    pub fn n_of_weighted_by_key<T, K, F>(&mut self, slice: &[T], amount: usize, key: F) -> Vec<T>
     where
-        I: Iterator<Item = T> + Clone,
+        T: Clone,
         K: Ord
             + Clone
             + Default
             + rand_distr::uniform::SampleUniform
             + for<'a> std::ops::AddAssign<&'a K>,
-        F: FnMut(T) -> K,
+        F: FnMut(&T) -> K,
     {
-        let weights = iterable.clone().map(key);
+        let weights = slice.iter().map(key);
         let w = rand::distributions::WeightedIndex::new(weights).unwrap();
         (0..amount)
-            .map(|_| iterable.clone().nth(self.sample(&w)).unwrap())
+            .map(|_| slice[self.sample(&w)].clone())
             .collect()
     }
 
-    pub fn n_of_weighted<X, T, I, W>(&mut self, iterable: I, weights: W, amount: usize) -> Vec<T>
+    pub fn n_of_weighted<X, T, W>(&mut self, slice: &[T], weights: W, amount: usize) -> Vec<T>
     where
-        I: Iterator<Item = T> + Clone,
+        T: Clone,
         W: IntoIterator,
         W::Item: rand::distributions::uniform::SampleBorrow<X>,
         X: rand::distributions::uniform::SampleUniform
@@ -130,18 +136,17 @@ impl<R: Rng> Rand<R> {
     {
         let w = rand::distributions::WeightedIndex::new(weights).unwrap();
         (0..amount)
-            .map(|_| iterable.clone().nth(self.rng.sample(&w)).unwrap())
+            .map(|_| slice[self.sample(&w)].clone())
             .collect()
     }
 
-    pub fn shuffle<T, I>(&mut self, iterable: &mut I) -> Vec<T>
+    pub fn shuffle<T>(&mut self, slice: &[T]) -> Vec<T>
     where
-        I: Iterator<Item = T> + Clone,
+        T: Clone,
     {
-        let iter = iterable.clone();
-        let mut idx: Vec<_> = (0..iterable.count()).collect();
+        let mut idx: Vec<_> = (0..slice.len()).collect();
         idx.shuffle(&mut self.rng);
-        let sorted_tuples = idx.iter().zip(iter).sorted_by_key(|x| *x.0);
-        sorted_tuples.map(|x| x.1).collect()
+        let sorted_tuples = idx.iter().zip(slice.iter()).sorted_by_key(|x| *x.0);
+        sorted_tuples.map(|x| x.1.clone()).collect()
     }
 }
