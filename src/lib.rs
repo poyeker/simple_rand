@@ -1,6 +1,5 @@
 use std::ops::{Deref, DerefMut};
 
-pub mod macros;
 use itertools::*;
 pub use rand::prelude::*;
 pub use rand::rngs::StdRng;
