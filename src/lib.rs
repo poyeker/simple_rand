@@ -10,24 +10,32 @@ pub use rand_pcg::{Pcg32, Pcg64, Pcg64Mcg};
 pub use rand_xorshift::XorShiftRng;
 pub use rand_xoshiro::*;
 
-pub struct Rand<R: Rng> {
+pub struct Rand<R: SeedableRng + Rng> {
     rng: R,
 }
 
-impl<R: Rng> Deref for Rand<R> {
+impl<R: SeedableRng + Rng> Default for Rand<R> {
+    fn default() -> Self {
+        Rand {
+            rng: R::from_rng(thread_rng()).unwrap(),
+        }
+    }
+}
+
+impl<R: SeedableRng + Rng> Deref for Rand<R> {
     type Target = R;
     fn deref(&self) -> &Self::Target {
         &self.rng
     }
 }
 
-impl<R: Rng> DerefMut for Rand<R> {
+impl<R: SeedableRng + Rng> DerefMut for Rand<R> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.rng
     }
 }
 
-impl<R: Rng> Rand<R> {
+impl<R: SeedableRng + Rng> Rand<R> {
     pub fn new(rng: R) -> Self {
         Rand { rng }
     }
