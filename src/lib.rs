@@ -4,7 +4,7 @@ use itertools::*;
 pub use rand::prelude::*;
 pub use rand::rngs::StdRng;
 use rand::seq::SliceRandom;
-use rand_distr::*;
+pub use rand_distr::*;
 pub use rand_pcg::{Pcg32, Pcg64, Pcg64Mcg};
 pub use rand_xorshift::XorShiftRng;
 pub use rand_xoshiro::*;
